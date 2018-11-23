@@ -6,16 +6,31 @@ const { app } = require('../server');
 const { mongoose, getConnectedDb } = require('../db/moongose');
 
 const text = 'Test todo text';
+
+const todos = [
+	{
+		text: 'First test todo'
+	},
+	{
+		text: 'Second test todo'
+	}
+];
+
 beforeEach((done) => {
 	console.time('Before each');
 	getConnectedDb()
 		.then(() => {
 			console.timeLog('Before each', 'Before remove');
-			Todo.remove({ text: 'Test todo text' }).then(() => {
-				mongoose.disconnect();
-				done();
-				console.timeEnd('Before each');
-			});
+			Todo
+				.remove()
+				.then(() => {
+					return Todo.insertMany(todos);
+				})
+				.then(() => {
+					mongoose.disconnect();
+					done();
+					console.timeEnd('Before each');
+				});
 		})
 		.catch((err) => {
 			done(err);
@@ -67,3 +82,15 @@ describe('POST /todos', () => {
 			.end(() => done());
 	});
 });
+
+describe('GET /todos', (done)=>{
+	it('should get all todos', (done)=>{
+		request(app)
+		.get('/todos')
+		.expect(200)
+		.expect((res)=>{
+			expect(res.body.todos.length).toBe(2);
+		})
+		.end(done);
+	});
+})
