@@ -1,5 +1,6 @@
 const expect = require('expect');
 const request = require('supertest');
+const { ObjectID } = require('mongodb');
 
 const { Todo } = require('../models/todo');
 const { app } = require('../server');
@@ -9,18 +10,18 @@ const text = 'Test todo text';
 
 const todos = [
 	{
+		_id: new ObjectID(),
 		text: 'First test todo'
 	},
 	{
+		_id: new ObjectID(),
 		text: 'Second test todo'
 	}
 ];
 
 beforeEach((done) => {
-	console.time('Before each');
 	getConnectedDb()
 		.then(() => {
-			console.timeLog('Before each', 'Before remove');
 			Todo
 				.remove()
 				.then(() => {
@@ -29,7 +30,6 @@ beforeEach((done) => {
 				.then(() => {
 					mongoose.disconnect();
 					done();
-					console.timeEnd('Before each');
 				});
 		})
 		.catch((err) => {
@@ -40,19 +40,16 @@ beforeEach((done) => {
 describe('POST /todos', () => {
 	console.log(this);
 	it('should create a new todo', (done) => {
-		console.time('In test');
 		request(app)
 			.post('/todos')
 			.send({ text })
 			.expect(200)
 			.expect((res) => {
-				console.timeLog('In test', 'After result was recivied');
 				expect(res.body.text)
 					.toBe(text);
 			})
 			.end((err, res) => {
 
-				console.timeLog('In test', 'In the end');
 				if (err) {
 					return done(err);
 				}
@@ -63,12 +60,10 @@ describe('POST /todos', () => {
 							.find({ text: text })
 					})
 					.then((todos) => {
-						console.timeLog('In test', 'After find');
 						expect(todos).toBeTruthy();
 						expect(todos.length).toBe(1);
 						expect(todos[0].text).toBe(text);
 						done();
-						console.timeEnd('In test');
 					})
 					.catch((err) => done(err));
 			});
@@ -83,14 +78,46 @@ describe('POST /todos', () => {
 	});
 });
 
-describe('GET /todos', (done)=>{
-	it('should get all todos', (done)=>{
+describe('GET /todos', () => {
+	it('should get all todos', (done) => {
 		request(app)
-		.get('/todos')
-		.expect(200)
-		.expect((res)=>{
-			expect(res.body.todos.length).toBe(2);
-		})
-		.end(done);
+			.get('/todos')
+			.expect(200)
+			.expect((res) => {
+				expect(res.body.todos.length).toBe(2);
+			})
+			.end(done);
+	});
+});
+
+describe('GET /todos/:id', () => {
+	it('should get by id', (done) => {
+		request(app)
+			.get(`/todos/${todos[0]._id}`)
+			.expect(200)
+			.expect((res) => {
+				expect(res.body.todo.text).toBe(todos[0].text);
+			})
+			.end(done);
+	});
+
+	it('should not find by id if id is not valid', (done) => {
+		request(app)
+			.get(`/todos/123`)
+			.expect(404)
+			.expect((res) => {
+				expect(res.body.message).toBe('Todo not found');
+			})
+			.end(done);
+	});
+
+	it('should not find by id if id is valid', (done) => {
+		request(app)
+			.get(`/todos/${new ObjectID()}`)
+			.expect(404)
+			.expect((res) => {
+				expect(res.body.message).toBe('Todo not found');
+			})
+			.end(done);
 	});
 })

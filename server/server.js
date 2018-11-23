@@ -110,7 +110,7 @@ app.get('/todos/:id', (req, res) => {
 
 				res
 					.status(200)
-					.send({ result });
+					.send({ todo: result });
 			} else {
 				res
 					.status(404)
