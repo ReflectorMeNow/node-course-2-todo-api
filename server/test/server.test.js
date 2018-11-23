@@ -93,7 +93,7 @@ describe('GET /todos', () => {
 describe('GET /todos/:id', () => {
 	it('should get by id', (done) => {
 		request(app)
-			.get(`/todos/${todos[0]._id}`)
+			.get(`/todos/${todos[0]._id.toHexString()}`)
 			.expect(200)
 			.expect((res) => {
 				expect(res.body.todo.text).toBe(todos[0].text);
@@ -101,7 +101,7 @@ describe('GET /todos/:id', () => {
 			.end(done);
 	});
 
-	it('should not find by id if id is not valid', (done) => {
+	it('should return 404 if ID is not valid', (done) => {
 		request(app)
 			.get(`/todos/123`)
 			.expect(404)
@@ -111,9 +111,9 @@ describe('GET /todos/:id', () => {
 			.end(done);
 	});
 
-	it('should not find by id if id is valid', (done) => {
+	it('should return 404 if ID is valid, but not exists in the db', (done) => {
 		request(app)
-			.get(`/todos/${new ObjectID()}`)
+			.get(`/todos/${new ObjectID().toHexString()}`)
 			.expect(404)
 			.expect((res) => {
 				expect(res.body.message).toBe('Todo not found');
