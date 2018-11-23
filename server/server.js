@@ -16,28 +16,34 @@ app.post('/todos', (req, res) => {
 	getConnectedDb()
 		.then(() => {
 			return new Promise((resolve, reject) => {
+				console.time('Save a todo');
 				todo
 					.save()
 					.then((result) => {
 						resolve(result);
+						console.timeLog('Save a todo', 'After save');
 					})
 					.catch((err) => {
 						reject(err);
+						console.timeLog('Save a todo', 'After save');
 					});
 
 			});
 		})
 		.then((result) => {
 			mongoose.disconnect();
+			console.timeLog('Save a todo','After dicconnect');
 			res
 				.status(200)
 				.send(result);
+			console.timeEnd('Save a todo');
 		})
 		.catch((err) => {
 			mongoose.disconnect();
 			res
 				.status(400)
 				.send(err);
+
 		});
 });
 
@@ -49,3 +55,7 @@ app.get('/todos', (req, res) => {
 app.listen(3000, () => {
 	console.log('Started on port 3000...');
 });
+
+module.exports = {
+	app
+};
