@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const { ObjectID } = require('mongodb');
 
 const { mongoose, getConnectedDb } = require('./db/moongose');
 const { Todo } = require('./models/todo');
@@ -16,27 +17,22 @@ app.post('/todos', (req, res) => {
 	getConnectedDb()
 		.then(() => {
 			return new Promise((resolve, reject) => {
-				//console.time('Save a todo');
 				todo
 					.save()
 					.then((result) => {
 						resolve(result);
-						//console.timeLog('Save a todo', 'After save');
 					})
 					.catch((err) => {
 						reject(err);
-						//console.timeLog('Save a todo', 'After save');
 					});
 
 			});
 		})
 		.then((result) => {
 			mongoose.disconnect();
-			//console.timeLog('Save a todo','After dicconnect');
 			res
 				.status(200)
 				.send(result);
-			//console.timeEnd('Save a todo');
 		})
 		.catch((err) => {
 			mongoose.disconnect();
@@ -82,6 +78,52 @@ app.get('/todos', (req, res) => {
 		});
 });
 
+app.get('/todos/:id', (req, res) => {
+	getConnectedDb()
+		.then(() => {
+			return new Promise((resolve, reject) => {
+				if (!ObjectID.isValid(req.params.id)) {
+					reject({
+						statusCode: 404,
+						message: 'Todo not found'
+					})
+				}
+				Todo
+					.findById(req.params.id)
+					.then((result) => {
+						resolve(result);
+					})
+					.catch((err) => {
+						reject(err);
+					});
+			});
+		})
+		.then((todo) => {
+			mongoose.disconnect();
+			if (todo) {
+				let result = {
+					id: todo._id,
+					text: todo.text,
+					completed: todo.completed,
+					completedAt: todo.completedAt
+				};
+
+				res
+					.status(200)
+					.send({ result });
+			} else {
+				res
+					.status(404)
+					.send({ message: 'Todo not found' });
+			}
+		})
+		.catch((err) => {
+			mongoose.disconnect();
+			res
+				.status(err.statusCode || 400)
+				.send({ message: err.message } || err);
+		});
+});
 
 app.listen(3000, () => {
 	console.log('Started on port 3000...');
