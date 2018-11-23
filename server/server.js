@@ -16,27 +16,27 @@ app.post('/todos', (req, res) => {
 	getConnectedDb()
 		.then(() => {
 			return new Promise((resolve, reject) => {
-				console.time('Save a todo');
+				//console.time('Save a todo');
 				todo
 					.save()
 					.then((result) => {
 						resolve(result);
-						console.timeLog('Save a todo', 'After save');
+						//console.timeLog('Save a todo', 'After save');
 					})
 					.catch((err) => {
 						reject(err);
-						console.timeLog('Save a todo', 'After save');
+						//console.timeLog('Save a todo', 'After save');
 					});
 
 			});
 		})
 		.then((result) => {
 			mongoose.disconnect();
-			console.timeLog('Save a todo','After dicconnect');
+			//console.timeLog('Save a todo','After dicconnect');
 			res
 				.status(200)
 				.send(result);
-			console.timeEnd('Save a todo');
+			//console.timeEnd('Save a todo');
 		})
 		.catch((err) => {
 			mongoose.disconnect();
@@ -48,7 +48,38 @@ app.post('/todos', (req, res) => {
 });
 
 app.get('/todos', (req, res) => {
+	getConnectedDb()
+		.then(() => {
+			return new Promise((resolve, reject) => {
+				Todo
+					.find()
+					.then((result) => {
+						resolve(result);
+					})
+					.catch((err) => {
+						reject(err);
+					});
+			});
+		})
+		.then((result) => {
+			mongoose.disconnect();
+			let todos = result.map((item) => ({
+				text: item.text,
+				completedAt: item.completedAt,
+				completed: item.completed,
+				id: item._id
+			}));
+			res
+				.status(200)
+				.send({ todos });
+		})
+		.catch((err) => {
+			mongoose.disconnect();
+			res
+				.status(400)
+				.send(err);
 
+		});
 });
 
 
