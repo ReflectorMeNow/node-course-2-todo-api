@@ -8,7 +8,7 @@ function getConnectedDb() {
 		server: { socketOptions: { keepAlive: 1, connectTimeoutMS: 30000 } },
 		replset: { socketOptions: { keepAlive: 1, connectTimeoutMS: 30000 } }
 	};
-	return mongoose.connect(connectionString);
+	return mongoose.connect(connectionString, { poolSize: 4 });
 };
 
 module.exports = {
