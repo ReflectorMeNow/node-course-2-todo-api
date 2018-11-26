@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-let connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017/TodoApp';
+let connectionString = process.env.MONGODB_URI;
 mongoose.Promise = global.Promise;
 
 function getConnectedDb() {
