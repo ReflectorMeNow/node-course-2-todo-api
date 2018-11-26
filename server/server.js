@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
+const _ = require('lodash');
 
 const { mongoose, getConnectedDb } = require('./db/moongose');
 const { Todo } = require('./models/todo');
@@ -173,6 +174,74 @@ app.delete('/todos/:id', (req, res) => {
 				.send({ message: err.message } || err);
 		});
 });
+
+app.patch('/todos/:id', (req, res) => {
+	let id = req.params.id;
+	let body = _.pick(req.body, ['text', 'completed']);
+
+	if (!ObjectID.isValid(id)) {
+		return res
+			.status(404)
+			.send({
+				statusCode: 404,
+				message: 'Todo not found'
+			});
+	}
+
+	getConnectedDb()
+		.then(() => {
+			return new Promise((resolve, reject) => {
+				if (_.isBoolean(body.completed) && body.completed) {
+					body.completedAt = new Date().getTime();
+				} else {
+					body.completed = false;
+					body.completedAt = null;
+				}
+
+				Todo
+					.findByIdAndUpdate(id,
+						{
+							$set: body
+						},
+						{
+							new: true
+						})
+					.then((result) => {
+						resolve(result);
+					})
+					.catch((err) => {
+						reject(err);
+					});
+			});
+		})
+		.then((todo) => {
+			mongoose.disconnect();
+			if (todo) {
+				let result = {
+					id: todo._id,
+					text: todo.text,
+					completed: todo.completed,
+					completedAt: todo.completedAt
+				};
+
+				res
+					.status(200)
+					.send({ todo: result });
+			} else {
+				res
+					.status(404)
+					.send({ message: 'Todo not found' });
+			}
+		})
+		.catch((err) => {
+			mongoose.disconnect();
+			res
+				.status(err.statusCode || 400)
+				.send({ message: err.message } || err);
+		});
+});
+
+
 
 app.listen(port, () => {
 	console.log(`Started on port ${port}...`);
