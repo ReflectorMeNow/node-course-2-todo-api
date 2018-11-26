@@ -244,6 +244,44 @@ app.patch('/todos/:id', (req, res) => {
 });
 
 
+app.post('/users', (req, res) => {
+	let body = _.pick(req.body, ['email', 'password']);
+	let user = new User({
+		email: body.email,
+		password: body.password
+	});
+
+	getConnectedDb()
+		.then(() => {
+			return new Promise((resolve, reject) => {
+				user
+					.save()
+					.then((result) => {
+						user.generateAuthToken().then((data)=>{
+							resolve({user: data.user, token: data.token});
+						});
+					})
+					.catch((err) => {
+						reject(err);
+					});
+
+			});
+		})
+		.then((result) => {
+			mongoose.disconnect();
+			res
+				.status(200)
+				.header('x-auth', result.token)
+				.send(result.user);
+		})
+		.catch((err) => {
+			mongoose.disconnect();
+			res
+				.status(400)
+				.send(err);
+		});
+});
+
 
 app.listen(port, () => {
 	console.log(`Started on port ${port}...`);
