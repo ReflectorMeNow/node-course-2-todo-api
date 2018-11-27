@@ -14,7 +14,7 @@ beforeEach(populateUsers);
 beforeEach(populateTodos);
 
 
-describe('POST /todos', () => {
+/*describe('POST /todos', () => {
 	console.log(this);
 	it('should create a new todo', (done) => {
 		request(app)
@@ -272,8 +272,76 @@ describe('POST /users', () => {
 				console.log(res.body.message);
 				expect(res.headers['x-auth']).toBeFalsy();
 				expect(res.body.name).toBe('MongoError');
-				
+
 			})
 			.end(done);
+	});
+});*/
+
+describe('POST /users/login', () => {
+	it('should login user and return a token', (done) => {
+		const { email, password } = users[1];
+		request(app)
+			.post('/users/login')
+			.send({ email, password })
+			.expect(200)
+			.expect((res) => {
+				expect(res.headers['x-auth']).toBeTruthy();
+			})
+			.end((err, res) => {
+				if (err) {
+					return done(err);
+				}
+
+				getConnectedDb()
+					.then(() => {
+						User
+							.findById(users[1]._id)
+							.then((user) => {
+								expect(user.tokens[user.tokens.length - 1]).toHaveProperty('access', 'auth');
+								expect(user.tokens[user.tokens.length - 1]).toHaveProperty('token', res.headers['x-auth']);
+								done();
+							})
+							.catch((err) => {
+								done(err);
+							})
+					})
+					.catch((err) => {
+						done(err);
+					})
+			});
+
+	});
+
+	it('should reject invalid login', (done) => {
+		request(app)
+			.post('/users/login')
+			.send({ email: users[1].email, password: '321' })
+			.expect(401)
+			.expect((res) => {
+				expect(res.headers['x-auth']).toBeFalsy();
+			})
+			.end((err, res) => {
+				if (err) {
+					return done(err);
+				}
+
+				getConnectedDb()
+					.then(() => {
+						User
+							.findById(users[1]._id)
+							.then((user) => {
+								console.log(user.tokens.length)
+								expect(user.tokens.length).toBe(1);
+								done();
+							})
+							.catch((err) => {
+								done(err);
+							})
+					})
+					.catch((err) => {
+						done(err);
+					})
+			});
 	});
 });
