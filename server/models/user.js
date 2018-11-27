@@ -40,7 +40,7 @@ UserSchema.methods = {
 	generateAuthToken() {
 		let user = this;
 		let access = 'auth';
-		let token = jwt.sign({ _id: user._id.toHexString(), access }, 'abc123').toString();
+		let token = jwt.sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET).toString();
 
 		user.tokens.push({ access, token });
 		return user.save().then((data) => {
@@ -69,7 +69,7 @@ UserSchema.statics = {
 		let decoded;
 
 		try {
-			decoded = jwt.verify(token, 'abc123');
+			decoded = jwt.verify(token, process.env.JWT_SECRET);
 		}
 		catch (e) {
 			return Promise.reject({ statusCode: 401, message: 'Users token is not valid' });
