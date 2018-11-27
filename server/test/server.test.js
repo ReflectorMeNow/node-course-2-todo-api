@@ -14,7 +14,7 @@ beforeEach(populateUsers);
 beforeEach(populateTodos);
 
 
-/*describe('POST /todos', () => {
+describe('POST /todos', () => {
 	console.log(this);
 	it('should create a new todo', (done) => {
 		request(app)
@@ -276,7 +276,7 @@ describe('POST /users', () => {
 			})
 			.end(done);
 	});
-});*/
+});
 
 describe('POST /users/login', () => {
 	it('should login user and return a token', (done) => {
@@ -310,7 +310,6 @@ describe('POST /users/login', () => {
 						done(err);
 					})
 			});
-
 	});
 
 	it('should reject invalid login', (done) => {
@@ -331,7 +330,6 @@ describe('POST /users/login', () => {
 						User
 							.findById(users[1]._id)
 							.then((user) => {
-								console.log(user.tokens.length)
 								expect(user.tokens.length).toBe(1);
 								done();
 							})
@@ -342,6 +340,33 @@ describe('POST /users/login', () => {
 					.catch((err) => {
 						done(err);
 					})
+			});
+	});
+});
+
+describe('DELETE /users/me/token', () => {
+	it('should remove auth token on logout', (done) => {
+		let token = users[0].tokens[0].token;
+		request(app)
+			.delete('/users/me/token')
+			.set('x-auth', token)
+			.expect(200)
+			.end((err, res) => {
+				if (err) {
+					done(err);
+				}
+
+				getConnectedDb()
+					.then(() => {
+						return User.findById(users[0]._id);
+					})
+					.then((user) => {
+						expect(user.tokens.length).toBe(0);
+						done();
+					})
+					.catch((err) => {
+						done(err);
+					});
 			});
 	});
 });
