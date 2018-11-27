@@ -72,6 +72,37 @@ UserSchema.statics = {
 			'tokens.token': token,
 			'tokens.access': 'auth'
 		});
+	},
+	findByCredentials(email, password) {
+		let User = this;
+		if (!email) {
+			return Promise.reject({ statusCode: 400, message: 'Email is required' });
+		}
+		if (!password) {
+			return Promise.reject({ statusCode: 400, message: 'Password is required' });
+		}
+
+		return User
+			.findOne({ email })
+			.then((user) => {
+				if (!user) {
+					return Promise.reject({ statusCode: 401, message: 'Wrong email or password' });
+				}
+
+				return new Promise((resolve, reject) => {
+					bcrypt.compare(password, user.password, (err, res) => {
+						if (err) {
+							return reject({ statusCode: 400, message: err });
+						}
+						if (!res) {
+							return reject({ statusCode: 401, message: 'Wrong email or password' });
+						}
+
+						return resolve(user);
+					});
+				})
+
+			})
 	}
 };
 

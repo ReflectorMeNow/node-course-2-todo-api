@@ -286,6 +286,45 @@ app.get('/users/me', authenticate, (req, res) => {
 	res.send({ id: req.user._id, email: req.user.email });
 });
 
+app.post('/users/login', (req, responce) => {
+	let body = _.pick(req.body, ['email', 'password']);
+	getConnectedDb()
+		.then(() => {
+			return User
+				.findByCredentials(body.email, body.password)
+				.then((user) => {
+					return new Promise((resolve, reject) => {
+						user.generateAuthToken()
+							.then((data) => {
+								resolve({
+									id: user._id,
+									email: user.email,
+									token: data.token
+								});
+							})
+							.catch((err) => {
+								reject(err);
+							})
+					});
+				});
+		})
+		.then((user) => {
+			mongoose.disconnect();
+			responce
+				.status(200)
+				.header('x-auth', user.token)
+				.send({ id: user.id, email: user.email })
+
+		})
+		.catch((err) => {
+			mongoose.disconnect();
+			let message = err.message || err;
+			responce
+				.status(err.statusCode || 400)
+				.send({ message: message });
+		})
+});
+
 app.listen(port, () => {
 	console.log(`Started on port ${port}...`);
 });
