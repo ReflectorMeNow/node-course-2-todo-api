@@ -3,41 +3,16 @@ const request = require('supertest');
 const { ObjectID } = require('mongodb');
 
 const { Todo } = require('../models/todo');
+const { User } = require('../models/user');
 const { app } = require('../server');
 const { mongoose, getConnectedDb } = require('../db/moongose');
+const { todos, populateTodos, users, populateUsers } = require('./seed/seed');
 
 const text = 'Test todo text';
 
-const todos = [
-	{
-		_id: new ObjectID(),
-		text: 'First test todo'
-	},
-	{
-		_id: new ObjectID(),
-		text: 'Second test todo',
-		completed: true,
-		completedAt: 333
-	}
-];
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
-beforeEach((done) => {
-	getConnectedDb()
-		.then(() => {
-			Todo
-				.remove()
-				.then(() => {
-					return Todo.insertMany(todos);
-				})
-				.then(() => {
-					mongoose.disconnect();
-					done();
-				});
-		})
-		.catch((err) => {
-			done(err);
-		});
-});
 
 describe('POST /todos', () => {
 	console.log(this);
@@ -205,6 +180,99 @@ describe('PATCH /todos/:id', () => {
 				expect(res.body.todo.text).toBe("The are a new text");
 				expect(res.body.todo.completed).toBe(false);
 				expect(res.body.todo.completed).toBeFalsy();
+			})
+			.end(done);
+	});
+});
+
+
+describe('GET /users/me', () => {
+
+	it('should return a user if authenticated', (done) => {
+		request(app)
+			.get('/users/me')
+			.set('x-auth', users[0].tokens[0].token)
+			.expect(200)
+			.expect((res) => {
+				expect(res.body.id).toBe(users[0]._id.toHexString());
+				expect(res.body.email).toBe(users[0].email);
+			})
+			.end(done);
+	});
+
+	it('should return 401 if not authenticated', (done) => {
+		request(app)
+			.get('/users/me')
+			.set('x-auth', '123321')
+			.expect(401)
+			.expect((res) => {
+				expect(res.body.message).toBe('Users token is not valid');
+			})
+			.end(done);
+	});
+});
+
+describe('POST /users', () => {
+	it('should create a user', (done) => {
+		let email = 'example@exampl.com';
+		let password = '123mnb!';
+
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(200)
+			.expect((res) => {
+				expect(res.headers['x-auth']).toBeTruthy();
+				expect(res.body.id).toBeTruthy();
+				expect(res.body.email).toBe(email);
+			})
+			.end((err) => {
+				if (err) {
+					return done(err);
+				}
+
+				getConnectedDb()
+					.then(() => {
+						return User.findOne({ email });
+					})
+					.then((user) => {
+						expect(user).toBeTruthy();
+						expect(user.password).not.toBe(password);
+						done();
+					})
+					.catch((err) => {
+						done(err);
+					});
+			});
+	});
+
+	it('should return validation errors if request invalid', (done) => {
+		let email = '';
+		let password = '1';
+
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(400)
+			.expect((res) => {
+				expect(res.headers['x-auth']).toBeFalsy();
+				expect(res.body.message).toBeTruthy();
+			})
+			.end(done);
+	});
+
+	it('should not create user if email in use', (done) => {
+		let email = users[0].email;
+		let password = '123abc!';
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(400)
+			.expect((res) => {
+				console.log(res.body.message);
+				expect(res.headers['x-auth']).toBeFalsy();
+				expect(res.body.name).toBe('MongoError');
+				
 			})
 			.end(done);
 	});

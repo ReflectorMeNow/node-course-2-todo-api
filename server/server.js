@@ -283,7 +283,7 @@ app.post('/users', (req, res) => {
 });
 
 app.get('/users/me', authenticate, (req, res) => {
-	res.send(req.user);
+	res.send({ id: req.user._id, email: req.user.email });
 });
 
 app.listen(port, () => {
