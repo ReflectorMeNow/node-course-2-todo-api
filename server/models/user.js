@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 
 let UserSchema = new mongoose.Schema({
 	email: {
@@ -63,7 +64,7 @@ UserSchema.statics = {
 			decoded = jwt.verify(token, 'abc123');
 		}
 		catch (e) {
-			return Promise.reject({statusCode: 401, message: 'Users token is not valid'});
+			return Promise.reject({ statusCode: 401, message: 'Users token is not valid' });
 		}
 
 		return User.findOne({
@@ -73,6 +74,22 @@ UserSchema.statics = {
 		});
 	}
 };
+
+UserSchema.pre('save', function (next) {
+	let user = this;
+	let password = user.password;
+
+	if (user.isModified('password')) {
+		bcrypt.genSalt(10, (err, salt) => {
+			bcrypt.hash(password, salt, (err, hash) => {
+				user.password = hash;
+				next();
+			})
+		});
+	} else {
+		next();
+	}
+});
 
 let User = mongoose.model('User', UserSchema);
 
