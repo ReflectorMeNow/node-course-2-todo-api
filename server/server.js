@@ -325,6 +325,34 @@ app.post('/users/login', (req, responce) => {
 		})
 });
 
+app.delete('/users/me/token', authenticate, (req, res) => {
+	let { token, user } = req;
+	getConnectedDb()
+		.then(() => {
+			return new Promise((resolve, reject) => {
+				user
+					.removeToken(token)
+					.then(() => {
+						resolve();
+					})
+					.catch((err) => {
+						reject(err);
+					});
+			});
+		})
+		.then(() => {
+			res
+				.status(200)
+				.send({ message: 'A token was deleted' });
+		})
+		.catch((err) => {
+			res
+				.status(400)
+				.send({ message: err })
+		})
+
+});
+
 app.listen(port, () => {
 	console.log(`Started on port ${port}...`);
 });

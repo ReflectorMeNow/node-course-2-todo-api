@@ -52,6 +52,14 @@ UserSchema.methods = {
 		let userObject = user.toObject();
 
 		return _.pick(userObject, ['_id', 'email']);
+	},
+	removeToken(token) {
+		let user = this;
+		return user.update({
+			$pull: {
+				tokens: { token }
+			}
+		});
 	}
 };
 
