@@ -8,11 +8,13 @@ const _ = require('lodash');
 const { mongoose, getConnectedDb } = require('./db/moongose');
 const { Todo } = require('./models/todo');
 const { User } = require('./models/user');
+const { authenticate } = require('./middleware/authenticate');
 
 const port = process.env.PORT;
 
 let app = express();
 app.use(bodyParser.json());
+
 
 app.post('/todos', (req, res) => {
 	let todo = new Todo({
@@ -257,8 +259,8 @@ app.post('/users', (req, res) => {
 				user
 					.save()
 					.then((result) => {
-						user.generateAuthToken().then((data)=>{
-							resolve({user: data.user, token: data.token});
+						user.generateAuthToken().then((data) => {
+							resolve({ user: data.user, token: data.token });
 						});
 					})
 					.catch((err) => {
@@ -272,7 +274,7 @@ app.post('/users', (req, res) => {
 			res
 				.status(200)
 				.header('x-auth', result.token)
-				.send(result.user);
+				.send({ id: result.user._id, email: result.user.email });
 		})
 		.catch((err) => {
 			mongoose.disconnect();
@@ -282,6 +284,9 @@ app.post('/users', (req, res) => {
 		});
 });
 
+app.get('/users/me', authenticate, (req, res) => {
+	res.send(req.user);
+});
 
 app.listen(port, () => {
 	console.log(`Started on port ${port}...`);

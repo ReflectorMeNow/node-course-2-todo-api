@@ -46,11 +46,31 @@ UserSchema.methods = {
 			return { user: data, token };
 		});
 	},
-	toJSON(){
+	toJSON() {
 		let user = this;
 		let userObject = user.toObject();
 
-		return _.pick(userObject, ['_id','email']);
+		return _.pick(userObject, ['_id', 'email']);
+	}
+};
+
+UserSchema.statics = {
+	findByToken(token) {
+		let User = this;
+		let decoded;
+
+		try {
+			decoded = jwt.verify(token, 'abc123');
+		}
+		catch (e) {
+			return Promise.reject({statusCode: 401, message: 'Users token is not valid'});
+		}
+
+		return User.findOne({
+			_id: decoded._id,
+			'tokens.token': token,
+			'tokens.access': 'auth'
+		});
 	}
 };
 
